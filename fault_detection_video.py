@@ -8,11 +8,11 @@ from datetime import datetime
 # import argparse  # Commented out since we're using hardcoded paths
 
 # Configuration variables - Edit these as needed
-VIDEO_PATH = r"D:\Drishti\Drishti_DMRC_data\Re-oriented\feed1_reoriented.mp4"  # Path to your input video file
-MODEL_PATH = r"D:\Drishti\135epochs.pt"                           # Path to your PyTorch model (.pt file)
-PLAYBACK_SPEED = 2.0                                           # Playback speed multiplier (0.25x = slower, 1.0x = normal, 2.0x = faster)
-OUTPUT_DIR = r"D:\Drishti\Drishti_DMRC_data\Output"              # Base directory for saving detected frames
-CONFIDENCE_THRESHOLD = 0.15                                    # Detection confidence threshold
+VIDEO_PATH = r"D:\Dhrishti\Drishti_DMRC_data\basler_1767303407.mp4"  # Path to your input video file
+MODEL_PATH = r"D:\Dhrishti\YOLO\v4\FaultDetection_v4.pt"                          # Path to your PyTorch model (.pt file)
+PLAYBACK_SPEED = 1.5                                              # Playback speed multiplier (0.25x = slower, 1.0x = normal, 2.0x = faster)
+OUTPUT_DIR = r"D:\Dhrishti\Drishti_DMRC_data\Output1"              # Base directory for saving detected frames
+CONFIDENCE_THRESHOLD = 0.2                                    # Detection confidence threshold
 
 def load_model(model_path):
     """
@@ -86,9 +86,12 @@ def main(video_path, model_path, playback_speed=1.0, output_dir=None):
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         run_dir = os.path.join(output_dir, f"run_{timestamp}")
         os.makedirs(run_dir, exist_ok=True)
+        faults_dir = os.path.join(run_dir, "faults")
+        os.makedirs(faults_dir, exist_ok=True)
         print(f"  Saving detected frames to: {run_dir}")
     else:
         run_dir = None
+        faults_dir = None
 
     # Calculate delay between frames based on video's native FPS and playback speed
     delay = int((1000 / video_fps) / playback_speed)  # milliseconds
@@ -126,6 +129,9 @@ def main(video_path, model_path, playback_speed=1.0, output_dir=None):
                 filename = f"frame_{frame_count:04d}_{detections}_{confidence:.2f}.jpg"
                 filepath = os.path.join(class_dir, filename)
                 cv2.imwrite(filepath, processed_frame)
+                if faults_dir:
+                    faults_path = os.path.join(faults_dir, filename)
+                    cv2.imwrite(faults_path, frame)
             print(f"Saved frame {frame_count} with {detections} detections (conf: {confidence:.2f})")
 
         # Display the frame

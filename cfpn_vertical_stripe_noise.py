@@ -2,9 +2,12 @@
 import cv2
 import numpy as np
 import math
+import os
 
 # ================= USER CONFIG ================= #
-INPUT_PATH = "D:\\SyntheticData\\Unreal SDG\\spalling\\C13\\MetroTrack.0213.jpeg"
+INPUT_PATH = "D:\\SyntheticData\\Unreal SDG\\Fault\\C8"
+# If INPUT_PATH is a directory, outputs are written to INPUT_PATH\\noise\\<name>_noise.<ext>
+# If INPUT_PATH is a file, OUTPUT_PATH is used.
 OUTPUT_PATH = "D:\\SyntheticData\\Unreal SDG\\spalling\\C13\\noise\\image_noise.jpg"
 
 # Column Fixed-Pattern Noise (CFPN)
@@ -86,11 +89,20 @@ def clamp_to_dtype(arr, dtype):
     return arr.astype(dtype)
 
 
-def main():
-    rng = np.random.default_rng(RANDOM_SEED)
-    img = cv2.imread(INPUT_PATH, cv2.IMREAD_UNCHANGED)
+def is_image_file(path):
+    ext = os.path.splitext(path)[1].lower()
+    return ext in {".jpg", ".jpeg", ".png", ".bmp", ".tif", ".tiff", ".webp"}
+
+
+def build_output_path(in_path, out_dir):
+    base, ext = os.path.splitext(os.path.basename(in_path))
+    return os.path.join(out_dir, f"{base}_noise{ext}")
+
+
+def add_noise_to_image(in_path, out_path, rng):
+    img = cv2.imread(in_path, cv2.IMREAD_UNCHANGED)
     if img is None:
-        raise FileNotFoundError(INPUT_PATH)
+        raise FileNotFoundError(in_path)
 
     if img.ndim == 2:
         luma = img.astype(np.float32)
@@ -124,7 +136,22 @@ def main():
         else:
             out = out_bgr
 
-    cv2.imwrite(OUTPUT_PATH, out)
+    cv2.imwrite(out_path, out)
+
+
+def main():
+    rng = np.random.default_rng(RANDOM_SEED)
+    if os.path.isdir(INPUT_PATH):
+        out_dir = os.path.join(INPUT_PATH, "noise")
+        os.makedirs(out_dir, exist_ok=True)
+        for name in os.listdir(INPUT_PATH):
+            in_path = os.path.join(INPUT_PATH, name)
+            if not os.path.isfile(in_path) or not is_image_file(in_path):
+                continue
+            out_path = build_output_path(in_path, out_dir)
+            add_noise_to_image(in_path, out_path, rng)
+    else:
+        add_noise_to_image(INPUT_PATH, OUTPUT_PATH, rng)
 
 
 if __name__ == "__main__":
